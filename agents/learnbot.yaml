@@ -1,0 +1,176 @@
+# LearnBot Agent Configuration - Scout Retail Dashboard
+# Handles narrative generation, insights, and natural language explanations
+
+agent_config:
+  name: "LearnBot"
+  version: "4.5.1"
+  purpose: "Natural language insights and narrative generation for Scout Retail"
+  
+  # MCP Server Integration
+  mcp_servers:
+    - name: "supabase-mcp"
+      role: "data_analysis"
+    - name: "deep-research-mcp"
+      role: "context_enrichment"
+      
+  # Core Capabilities
+  capabilities:
+    - narrative_generation
+    - insight_extraction
+    - anomaly_detection
+    - natural_language_explanation
+    - contextual_storytelling
+    
+  # Task Definitions
+  tasks:
+    generate_narrative:
+      description: "Generate natural language explanations of data changes"
+      inputs:
+        - metric_changes: object
+        - filter_context: object
+        - time_period: string
+        - audience: "executive|analyst|operational"
+      outputs:
+        - narrative_text: string
+        - key_insights: array
+        - recommended_actions: array
+        - confidence_score: number
+      narrative_templates:
+        revenue_increase: |
+          "Revenue increased by {percentage}% to {amount} in {period}. 
+          This growth was primarily driven by {top_driver}, which contributed {contribution}% of the increase. 
+          {region} region showed the strongest performance with {regional_growth}% growth."
+        
+        profit_margin_concern: |
+          "While revenue grew {revenue_growth}%, profit margins declined by {margin_decline}% due to {cost_factor}. 
+          This suggests {analysis} and may require {recommendation}."
+          
+        seasonal_pattern: |
+          "The {metric} shows typical seasonal patterns for {industry}, with {seasonal_trend} consistent with {historical_comparison}. 
+          Expected {future_prediction} based on historical trends."
+          
+    extract_insights:
+      description: "Extract actionable insights from data patterns"
+      inputs:
+        - data_trends: object
+        - comparative_periods: array
+        - business_context: object
+      outputs:
+        - primary_insights: array
+        - secondary_insights: array
+        - risk_factors: array
+        - opportunities: array
+      insight_categories:
+        performance_insights:
+          - metric_trends
+          - comparative_analysis
+          - benchmark_performance
+        customer_insights:
+          - behavioral_patterns
+          - segmentation_opportunities
+          - retention_analysis
+        operational_insights:
+          - efficiency_metrics
+          - capacity_utilization
+          - process_optimization
+          
+    detect_anomalies:
+      description: "Identify unusual patterns and outliers in data"
+      inputs:
+        - metric_data: array
+        - baseline_period: string
+        - sensitivity_level: "high|medium|low"
+      outputs:
+        - anomalies: array
+        - anomaly_explanations: array
+        - investigation_recommendations: array
+      anomaly_types:
+        statistical_outliers:
+          method: "z_score"
+          threshold: 2.5
+        trend_breaks:
+          method: "changepoint_detection"
+          sensitivity: "medium"
+        seasonal_deviations:
+          method: "seasonal_decomposition"
+          confidence_interval: 0.95
+          
+    explain_changes:
+      description: "Provide natural language explanations for data changes"
+      inputs:
+        - before_state: object
+        - after_state: object
+        - change_context: object
+      outputs:
+        - explanation_text: string
+        - contributing_factors: array
+        - impact_assessment: object
+      explanation_framework:
+        what_changed: "Quantify the change"
+        why_it_changed: "Identify root causes"
+        impact_analysis: "Assess business impact"
+        next_steps: "Recommend actions"
+        
+  # Natural Language Processing
+  nlp_capabilities:
+    sentiment_analysis: true
+    entity_extraction: true
+    trend_classification: true
+    comparative_language: true
+    
+  # Narrative Styles
+  narrative_styles:
+    executive_summary:
+      tone: "confident, strategic"
+      length: "concise"
+      focus: "business_impact"
+      
+    analytical_deep_dive:
+      tone: "detailed, technical"
+      length: "comprehensive"
+      focus: "data_patterns"
+      
+    operational_briefing:
+      tone: "actionable, practical"
+      length: "focused"
+      focus: "immediate_actions"
+      
+  # Integration with Other Agents
+  agent_collaboration:
+    with_retailbot:
+      - receives: ["insights", "anomalies", "trend_analysis"]
+      - sends: ["narrative_feedback", "context_enrichment"]
+      
+    with_claudia:
+      - receives: ["context_changes", "user_interactions"]
+      - sends: ["narrative_updates", "insights"]
+      
+    with_dash:
+      - receives: ["ui_feedback", "user_engagement_data"]
+      - sends: ["content_updates", "explanation_text"]
+      
+  # Learning and Adaptation
+  learning_system:
+    feedback_integration: true
+    narrative_optimization: true
+    context_learning: true
+    user_preference_adaptation: true
+    
+  # Content Quality
+  quality_metrics:
+    readability_score: "flesch_reading_ease"
+    clarity_index: "fog_index"
+    engagement_score: "user_interaction_rate"
+    accuracy_validation: "fact_checking"
+    
+  # Performance Optimization
+  performance:
+    narrative_cache_ttl: 600 # 10 minutes
+    insight_computation_timeout: 30 # seconds
+    batch_narrative_generation: true
+    
+  # Error Handling
+  error_handling:
+    narrative_generation_failure: "fallback_to_template"
+    insight_extraction_error: "return_basic_summary"
+    anomaly_detection_timeout: "use_cached_results"

@@ -1,0 +1,157 @@
+# Claudia Agent Configuration - Scout Retail Dashboard
+# Handles filter synchronization, dashboard orchestration, and cross-component state management
+
+agent_config:
+  name: "Claudia"
+  version: "4.5.1"
+  purpose: "Dashboard orchestration and filter synchronization for Scout Retail"
+  
+  # MCP Server Integration
+  mcp_servers:
+    - name: "supabase-mcp"
+      role: "state_management"
+    - name: "sqlite-mcp"
+      role: "session_storage"
+      
+  # Core Capabilities
+  capabilities:
+    - filter_synchronization
+    - dashboard_orchestration
+    - state_management
+    - cross_component_communication
+    - drill_down_navigation
+    
+  # Task Definitions
+  tasks:
+    sync_filters:
+      description: "Synchronize filter state across all dashboard components"
+      inputs:
+        - component_id: string
+        - filter_type: "year|region|segment|category"
+        - filter_value: any
+        - sync_scope: "all|selected_components"
+      outputs:
+        - updated_components: array
+        - filter_state: object
+        - affected_queries: array
+      logic: |
+        1. Update central filter state
+        2. Identify dependent components
+        3. Trigger component re-renders
+        4. Coordinate data refetch across agents
+        5. Maintain filter history for undo/redo
+        
+    orchestrate_dashboard:
+      description: "Coordinate interactions between dashboard components"
+      inputs:
+        - interaction_type: "click|hover|drill_down|filter_change"
+        - source_component: string
+        - interaction_data: object
+      outputs:
+        - coordination_plan: object
+        - component_updates: array
+        - agent_tasks: array
+      coordination_matrix:
+        kpi_cards:
+          affects: ["revenue_chart", "customer_table", "state_map"]
+          triggers: ["retailbot.calculate_kpis"]
+        revenue_chart:
+          affects: ["kpi_cards", "customer_table"]
+          triggers: ["retailbot.analyze_trends"]
+        customer_table:
+          affects: ["kpi_cards", "state_map"]
+          triggers: ["retailbot.customer_analysis"]
+        state_map:
+          affects: ["kpi_cards", "customer_table", "revenue_chart"]
+          triggers: ["retailbot.geographic_analysis"]
+          
+    manage_drill_downs:
+      description: "Handle drill-down interactions and navigation"
+      inputs:
+        - drill_source: string
+        - drill_dimension: string
+        - drill_value: any
+        - drill_level: number
+      outputs:
+        - navigation_state: object
+        - breadcrumb_trail: array
+        - updated_filters: object
+        - data_scope: object
+      drill_down_paths:
+        revenue_chart:
+          - level_1: "monthly -> daily"
+          - level_2: "daily -> hourly"
+          - level_3: "hourly -> transactions"
+        customer_table:
+          - level_1: "customer -> orders"
+          - level_2: "orders -> line_items"
+        state_map:
+          - level_1: "state -> cities"
+          - level_2: "cities -> stores"
+          - level_3: "stores -> transactions"
+          
+    generate_dynamic_text:
+      description: "Generate contextual text based on current filter state"
+      inputs:
+        - filter_state: object
+        - metric_changes: object
+      outputs:
+        - header_text: string
+        - insight_text: string
+        - filter_summary: string
+      templates:
+        no_filters: "Showing all data across all regions and segments"
+        single_filter: "Showing {filter_type}: {filter_value}"
+        multiple_filters: "Showing {filter_count} filters applied: {filter_summary}"
+        trend_positive: "📈 {metric} is trending up {percentage}% vs last period"
+        trend_negative: "📉 {metric} is down {percentage}% vs last period"
+        
+  # State Management
+  state_schema:
+    dashboard_state:
+      filters:
+        year: number
+        region: string
+        segment: string
+        category: string
+      drill_down_state:
+        active_drills: array
+        breadcrumb_trail: array
+      ui_state:
+        selected_components: array
+        hover_states: object
+        loading_states: object
+        
+  # Integration with Other Agents
+  agent_collaboration:
+    with_retailbot:
+      - sends: ["filter_changes", "drill_down_requests"]
+      - receives: ["kpi_results", "trend_analysis"]
+      
+    with_learnbot:
+      - sends: ["context_changes", "user_interactions"]
+      - receives: ["narrative_updates", "insights"]
+      
+    with_dash:
+      - sends: ["ui_state_changes", "component_updates"]
+      - receives: ["user_interactions", "component_events"]
+      
+  # Performance Optimization
+  performance:
+    debounce_filters: 300 # ms
+    batch_updates: true
+    lazy_load_components: true
+    memoize_calculations: true
+    
+  # Session Management
+  session_management:
+    store_filter_history: true
+    enable_undo_redo: true
+    persist_dashboard_state: true
+    session_timeout: 3600 # 1 hour
+    
+  # Error Handling
+  error_handling:
+    filter_sync_failures: "retry_with_fallback"
+    component_communication_errors: "isolate_and_continue"
+    state_corruption: "reset_to_last_known_good"

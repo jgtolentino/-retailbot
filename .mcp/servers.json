@@ -1,0 +1,10 @@
+{
+  "supabase": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-supabase"],
+    "env": {
+      "SUPABASE_URL": "https://cxzllzyxwpyptfretryc.supabase.co",
+      "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4emxsenl4d3B5cHRmcmV0cnljIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY4OTAwMDAwMCwiZXhwIjoyMDA0NTY4MDAwfQ.-tR8ZrwA95dvqV_uBnCZwEi1ScpZ9M7YpIEMCNYFiRU"
+    }
+  }
+}

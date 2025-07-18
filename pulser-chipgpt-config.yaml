@@ -1,0 +1,132 @@
+# Pulser Configuration for ChipGPT + Scout Integration
+name: scout-chipgpt-integration
+version: 1.0.0
+description: Scout Dashboard with ChipGPT MCP Backend
+
+# MCP Server Configuration
+mcp:
+  server:
+    url: https://mcp.chipgpt.biz
+    auth:
+      type: oauth2
+      client_id: ${CHIPGPT_CLIENT_ID}
+      client_secret: ${CHIPGPT_CLIENT_SECRET}
+      token_endpoint: /oauth/token
+      
+# Agent Registration
+agents:
+  - name: RetailBot
+    endpoint: /mcp/retailbot
+    description: Retail analytics and insights
+    capabilities:
+      - getInsights
+      - analyzeTrends
+      - predictSales
+      - segmentCustomers
+    auth: oauth
+    
+  - name: AdsBot
+    endpoint: /mcp/adsbot
+    description: Advertising campaign management
+    capabilities:
+      - generateCampaign
+      - optimizeAds
+      - analyzeROI
+      - targetAudience
+    auth: oauth
+    
+  - name: LearnBot
+    endpoint: /mcp/learnbot
+    description: Learning and recommendation engine
+    capabilities:
+      - recommendContent
+      - trackProgress
+      - personalizeJourney
+      - assessSkills
+    auth: oauth
+    
+  - name: Dash
+    endpoint: /mcp/dash
+    description: Dashboard orchestration and workflow
+    capabilities:
+      - orchestrate
+      - aggregate
+      - coordinate
+      - optimize
+    auth: oauth
+    
+  - name: Gagambi
+    endpoint: /mcp/gagambi
+    description: Creative content generation
+    capabilities:
+      - generateCreative
+      - brandAlignment
+      - visualConcepts
+      - copywriting
+    auth: oauth
+    
+  - name: Echo
+    endpoint: /mcp/echo
+    description: Feedback processing and sentiment
+    capabilities:
+      - processFeedback
+      - analyzeSentiment
+      - extractInsights
+      - categorize
+    auth: oauth
+
+# Frontend Binding
+frontend:
+  name: scout-dashboard
+  url: https://scout-databank-clone.vercel.app
+  bind_to: mcp.chipgpt.biz
+
+# Deployment Configuration
+deployment:
+  environments:
+    - name: development
+      mcp_url: http://localhost:8080
+      frontend_url: http://localhost:3000
+      
+    - name: staging
+      mcp_url: https://staging.mcp.chipgpt.biz
+      frontend_url: https://staging-scout.vercel.app
+      
+    - name: production
+      mcp_url: https://mcp.chipgpt.biz
+      frontend_url: https://scout-databank-clone.vercel.app
+
+# Session Management
+session:
+  storage: supabase
+  table: mcp_sessions
+  retention_days: 30
+  
+# Monitoring
+monitoring:
+  enabled: true
+  metrics:
+    - agent_calls
+    - response_time
+    - error_rate
+    - user_sessions
+  
+# Rate Limiting
+rate_limiting:
+  enabled: true
+  limits:
+    - endpoint: /mcp/*
+      requests_per_minute: 60
+      requests_per_hour: 1000
+    - endpoint: /mcp/gagambi
+      requests_per_minute: 10  # Creative generation is resource-intensive
+
+# Audit Logging
+audit:
+  enabled: true
+  log_level: info
+  destinations:
+    - type: supabase
+      table: audit_logs
+    - type: console
+      format: json

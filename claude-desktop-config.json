@@ -1,0 +1,106 @@
+{
+  "mcpServers": {
+    "supabase_enterprise": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--read-only",
+        "--project-ref=cxzllzyxwpyptfretryc"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_841cbb5589cbd90791cc3067d7161ec2c6d64c64"
+      }
+    },
+    "scout_retail_agents": {
+      "command": "node",
+      "args": [
+        "./mcp-servers/scout-retail-agents.js"
+      ],
+      "env": {
+        "PULSER_API_KEY": "${PULSER_API_KEY}",
+        "RETAIL_BOT_VERSION": "v4.5.1",
+        "LEARN_BOT_VERSION": "v3.2.0",
+        "CLAUDIA_VERSION": "v4.0.0",
+        "SUPABASE_URL": "https://cxzllzyxwpyptfretryc.supabase.co",
+        "SUPABASE_SERVICE_ROLE_KEY": "sbp_841cbb5589cbd90791cc3067d7161ec2c6d64c64"
+      }
+    },
+    "computer_use_testing": {
+      "command": "node",
+      "args": [
+        "/Users/tbwa/tools/js/mcp/computer-use/src/index.js"
+      ],
+      "env": {
+        "COMPUTER_USE_ENABLED": "true",
+        "SCREENSHOT_ENABLED": "true",
+        "DASHBOARD_URL": "http://localhost:3000/superstore"
+      }
+    },
+    "bruno_api_testing": {
+      "command": "npx",
+      "args": [
+        "bruno",
+        "run",
+        "./tests/",
+        "--env",
+        "development"
+      ],
+      "env": {
+        "SUPABASE_URL": "https://cxzllzyxwpyptfretryc.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4emxsenl4d3B5cHRmcmV0cnljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNzYxODAsImV4cCI6MjA2Nzk1MjE4MH0.b794GEIWE4ZdMAm9xQYAJ0Gx-XEn1fhJBTIIeTro_1g"
+      }
+    },
+    "deep_research": {
+      "command": "node",
+      "args": [
+        "/Users/tbwa/Projects/frontier-data-advertising-research/mcp-server.js"
+      ],
+      "env": {
+        "RESEARCH_API_KEY": "${RESEARCH_API_KEY}",
+        "RETAIL_FOCUS": "true",
+        "COMPETITIVE_ANALYSIS": "true"
+      }
+    }
+  },
+  "globalShortcuts": {
+    "scout_dashboard": {
+      "key": "Cmd+Shift+S",
+      "action": "openUrl",
+      "url": "http://localhost:3000/superstore"
+    },
+    "mcp_regression_test": {
+      "key": "Cmd+Shift+T",
+      "action": "runMCPCommand",
+      "command": "pulser execute mcp-regression-task.yaml"
+    }
+  },
+  "theme": {
+    "mode": "dark",
+    "accent": "#3B82F6"
+  },
+  "logging": {
+    "level": "info",
+    "mcpServerLogs": true,
+    "agentInteractions": true
+  },
+  "security": {
+    "allowedOrigins": [
+      "http://localhost:3000",
+      "https://scout-retail-dashboard.vercel.app"
+    ],
+    "sanitizeInputs": true,
+    "validateMCPResponses": true
+  },
+  "performance": {
+    "maxConcurrentMCPCalls": 10,
+    "mcpTimeout": 30000,
+    "cacheAgentResponses": true,
+    "cacheTTL": 300000
+  },
+  "notifications": {
+    "agentErrors": true,
+    "deploymentUpdates": true,
+    "performanceAlerts": true
+  }
+}

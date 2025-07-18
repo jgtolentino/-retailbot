@@ -1,0 +1,117 @@
+# MCP Task Delegation for Scout Databank Regression Testing
+# Compatible with PULSER agent orchestration
+
+mcp_task_definition:
+  task_id: "scout-databank-regression-suite"
+  description: "Comprehensive regression testing for Scout Databank dashboard"
+  
+  # Target MCP Servers
+  mcp_servers:
+    - name: "supabase-mcp"
+      purpose: "Database validation and data integrity checks"
+      
+    - name: "computer-use-mcp"  
+      purpose: "UI automation and visual regression testing"
+      
+    - name: "deep-research-mcp"
+      purpose: "Performance benchmarking and analytics validation"
+
+  # Agent Orchestration
+  agent_workflow:
+    primary_agent: "PULSER"
+    supporting_agents:
+      - "CLAUDIA"  # Data analysis
+      - "DAYOPS"   # Operations monitoring
+      - "MEMORY"   # Test result storage
+      
+  # Task Execution Flow
+  execution_sequence:
+    1:
+      agent: "PULSER"
+      mcp_server: "supabase-mcp"
+      action: "validate_database_schema"
+      params:
+        tables: ["transactions", "product_mix", "consumer_behavior", "consumer_profiles"]
+        checks: ["column_exists", "data_types", "constraints"]
+        
+    2:
+      agent: "CLAUDIA"
+      mcp_server: "supabase-mcp"
+      action: "execute_data_validation_queries"
+      params:
+        queries:
+          - "SELECT COUNT(*) FROM transactions WHERE revenue > 0"
+          - "SELECT DISTINCT category FROM product_mix"
+          - "SELECT AVG(revenue) FROM transactions GROUP BY location"
+          
+    3:
+      agent: "PULSER"
+      mcp_server: "computer-use-mcp"
+      action: "ui_regression_testing"
+      params:
+        url: "http://localhost:3000/dashboard"
+        tests:
+          - "dashboard_loads_successfully"
+          - "kpi_cards_display_data"
+          - "charts_render_correctly"
+          - "filters_work_properly"
+          
+    4:
+      agent: "DAYOPS"
+      mcp_server: "deep-research-mcp"
+      action: "performance_benchmarking"
+      params:
+        metrics: ["load_time", "api_response_time", "chart_render_time"]
+        thresholds: 
+          load_time: "< 2s"
+          api_response_time: "< 500ms"
+          chart_render_time: "< 1s"
+          
+    5:
+      agent: "MEMORY"
+      mcp_server: "sqlite-mcp"
+      action: "store_test_results"
+      params:
+        database: "/Users/tbwa/Documents/GitHub/ces_intelligence.db"
+        table: "regression_test_results"
+        
+# Expected Results Structure
+expected_outputs:
+  database_validation:
+    status: "pass|fail"
+    table_count: number
+    data_integrity_score: number
+    
+  ui_regression:
+    status: "pass|fail"
+    screenshot_comparisons: array
+    functional_tests: array
+    
+  performance_benchmarks:
+    load_time: number
+    api_response_time: number
+    chart_render_time: number
+    
+  test_summary:
+    overall_status: "pass|fail"
+    passed_tests: number
+    failed_tests: number
+    execution_time: number
+
+# Integration Points
+integration_config:
+  bruno_collection: "./tests/scout-databank-regression.bru"
+  cypress_specs: "./cypress/e2e/dashboard-regression.cy.js"
+  supabase_project: "cxzllzyxwpyptfretryc"
+  
+# Notification & Reporting
+notifications:
+  on_success:
+    - agent: "MEMORY"
+      action: "log_success"
+      
+  on_failure:
+    - agent: "PULSER"
+      action: "create_incident_report"
+    - agent: "CLAUDIA"
+      action: "analyze_failure_patterns"

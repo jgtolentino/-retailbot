@@ -1,0 +1,41 @@
+# MCP Task Delegation Configuration
+# For Bruno/Pulser to execute Scout Databank regression tests
+
+tasks:
+  scout_databank_regression:
+    type: "api_testing"
+    tool: "bruno"
+    config:
+      collection: "./tests/scout-databank.bru"
+      environment: "development"
+      
+  database_validation:
+    type: "supabase_testing"
+    tool: "pulser"
+    config:
+      project_ref: "cxzllzyxwpyptfretryc"
+      tables: ["transactions", "product_mix", "consumer_behavior", "consumer_profiles"]
+      
+  ui_regression:
+    type: "e2e_testing"
+    tool: "cypress"
+    config:
+      spec: "./cypress/e2e/dashboard.cy.js"
+      baseUrl: "http://localhost:3000"
+
+# MCP Server Configuration
+mcp_delegation:
+  bruno_tasks:
+    - api_endpoint_tests
+    - data_validation_tests
+    - performance_regression_tests
+    
+  pulser_orchestration:
+    - database_schema_validation
+    - real_time_subscription_tests
+    - cross_service_integration_tests
+    
+  execution_flow:
+    1. "Bruno validates API endpoints"
+    2. "Pulser orchestrates database tests"
+    3. "Results aggregated for regression report"

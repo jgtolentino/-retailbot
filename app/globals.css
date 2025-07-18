@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@media(max-width:640px){
+  .pyramid-row{
+    margin-bottom:8px
+  }
+  .pyramid-row .w-20{
+    width:60px
+  }
+  .pyramid-row .h-8{
+    height:24px
+  }
+  .pyramid-footer{
+    padding:12px
+  }
+  .pyramid-footer .text-2xl{
+    font-size:1.25rem
+  }
+}

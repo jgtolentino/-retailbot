@@ -1,0 +1,182 @@
+name: scout-retailbot-hybrid
+version: 1.0.0
+description: Hybrid Scout Dashboard with Groq-powered RetailBot
+
+services:
+  # Frontend - Next.js Dashboard
+  frontend:
+    type: vercel
+    path: .
+    env:
+      - NEXT_PUBLIC_SUPABASE_URL
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY
+      - RETAILBOT_API_URL
+    build:
+      command: npm run build
+    routes:
+      - src: /dashboard/*
+        dest: /dashboard/$1
+      - src: /api/retailbot/*
+        dest: /api/retailbot/$1
+
+  # RetailBot API - FastAPI with Groq
+  retailbot:
+    type: docker
+    path: api/retailbot
+    dockerfile: |
+      FROM python:3.11-slim
+      WORKDIR /app
+      COPY requirements.txt .
+      RUN pip install -r requirements.txt
+      COPY . .
+      CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    env:
+      - GROQ_API_KEY
+      - DATABASE_URL
+      - SUPABASE_URL
+      - SUPABASE_ANON_KEY
+    ports:
+      - 8000:8000
+    health_check:
+      path: /health
+      interval: 30s
+
+  # Supabase Database
+  database:
+    type: supabase
+    project_ref: cxzllzyxwpyptfretryc
+    schemas:
+      - public
+      - bronze
+      - silver
+      - gold
+
+agents:
+  # RetailBot Agent
+  retailbot:
+    name: RetailBot
+    type: llm-analytics
+    backend: groq
+    model: mixtral-8x7b-32768
+    endpoint: ${RETAILBOT_API_URL}/query
+    capabilities:
+      - natural-language-query
+      - sql-generation
+      - data-visualization
+      - predictive-analytics
+    auth:
+      type: api-key
+      header: X-API-Key
+
+  # Master Toggle Agent
+  master_toggle:
+    name: MasterToggle
+    type: data-sync
+    backend: supabase
+    capabilities:
+      - dimension-sync
+      - filter-management
+      - real-time-updates
+
+  # Lyra Data Lakehouse
+  lyra:
+    name: Lyra
+    type: data-pipeline
+    backend: node
+    capabilities:
+      - bronze-ingestion
+      - silver-transformation
+      - gold-aggregation
+    layers:
+      bronze:
+        retention: 90d
+        format: jsonb
+      silver:
+        retention: 365d
+        format: structured
+      gold:
+        retention: 730d
+        format: aggregated
+
+integrations:
+  # Groq LLM
+  groq:
+    type: llm-provider
+    api_key: ${GROQ_API_KEY}
+    models:
+      - mixtral-8x7b-32768
+      - llama2-70b-4096
+    rate_limits:
+      requests_per_minute: 60
+      tokens_per_minute: 10000
+
+  # Supabase
+  supabase:
+    type: database
+    url: ${SUPABASE_URL}
+    anon_key: ${SUPABASE_ANON_KEY}
+    service_role_key: ${SUPABASE_SERVICE_ROLE_KEY}
+
+deployment:
+  environments:
+    development:
+      frontend: http://localhost:3000
+      retailbot: http://localhost:8000
+      database: http://localhost:54321
+
+    staging:
+      frontend: https://scout-staging.vercel.app
+      retailbot: https://retailbot-staging.fly.dev
+      database: ${SUPABASE_URL}
+
+    production:
+      frontend: https://scout.tbwa.com
+      retailbot: https://retailbot.tbwa.com
+      database: ${SUPABASE_URL}
+
+monitoring:
+  metrics:
+    - query_latency
+    - llm_token_usage
+    - database_performance
+    - user_satisfaction
+  
+  alerts:
+    - type: latency
+      threshold: 2000ms
+      channel: slack
+    
+    - type: error_rate
+      threshold: 5%
+      channel: pagerduty
+
+security:
+  authentication:
+    provider: supabase
+    methods:
+      - email
+      - oauth
+  
+  authorization:
+    model: rbac
+    roles:
+      - admin
+      - analyst
+      - viewer
+  
+  api_keys:
+    rotation: 90d
+    encryption: aes-256
+
+ci_cd:
+  pipeline:
+    - lint
+    - test
+    - build
+    - deploy
+  
+  tests:
+    unit: jest
+    integration: cypress
+    api: bruno
+    regression: all

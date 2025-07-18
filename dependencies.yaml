@@ -1,0 +1,302 @@
+# Scout Retail Dashboard - Production Dependencies
+# Auto-generated from PRD v4.5.1
+# Used by CI/CD pipelines and automation tools
+
+project:
+  name: "scout-retail-dashboard-superstore"
+  version: "4.5.1"
+  owner: "dash"
+  stack: "react-next-supabase"
+
+frontend_dependencies:
+  runtime:
+    react: "^19.0.0"
+    react-dom: "^19.0.0"
+    next: "15.3.3"
+    tailwindcss: "^4.0.0"
+    recharts: "^3.1.0"
+    clsx: "^2.1.1"
+    lucide-react: "^0.525.0"
+    date-fns: "^4.1.0"
+    "@supabase/supabase-js": "^2.51.0"
+  
+  development:
+    typescript: "^5.0.0"
+    "@types/node": "^20.0.0"
+    "@types/react": "^19.0.0"
+    "@types/react-dom": "^19.0.0"
+    eslint: "latest"
+    prettier: "latest"
+    dotenv: "^17.2.0"
+  
+  testing:
+    jest: "^29.0.0"
+    "@testing-library/react": "^14.0.0"
+    cypress: "^13.0.0"
+    bruno: "latest"
+
+mcp_agents:
+  retailbot:
+    version: "v4.5.1"
+    purpose: "KPI computation & retail analytics"
+    integration: "pulser_mcp"
+    config_file: "./agents/retailbot.yaml"
+    
+  learnbot:
+    version: "v3.2.0"
+    purpose: "Narrative generation engine"
+    integration: "pulser_mcp"
+    config_file: "./agents/learnbot.yaml"
+    
+  claudia:
+    version: "v4.0.0"
+    purpose: "Filter sync & state management"
+    integration: "pulser_mcp"
+    config_file: "./agents/claudia.yaml"
+    
+  pulser:
+    version: "latest"
+    purpose: "Primary orchestration agent"
+    integration: "mcp_server"
+    config_file: "./agents/pulser-config.yaml"
+
+mcp_servers:
+  supabase_enterprise:
+    command: "npx"
+    args: 
+      - "-y"
+      - "@supabase/mcp-server-supabase@latest"
+      - "--read-only"
+      - "--project-ref=cxzllzyxwpyptfretryc"
+    env:
+      SUPABASE_ACCESS_TOKEN: "${SUPABASE_PERSONAL_ACCESS_TOKEN}"
+      SUPABASE_SERVICE_ROLE_KEY: "${SUPABASE_SERVICE_ROLE_KEY}"
+    
+  retail_agents:
+    command: "pulser"
+    args:
+      - "mcp-server"
+      - "--config"
+      - "./agents/retail-agents.yaml"
+    env:
+      PULSER_API_KEY: "${PULSER_API_KEY}"
+      RETAIL_BOT_VERSION: "v4.5.1"
+      LEARN_BOT_VERSION: "v3.2.0"
+      CLAUDIA_VERSION: "v4.0.0"
+      
+  computer_use:
+    command: "node"
+    args:
+      - "./mcp-servers/computer-use.js"
+    env:
+      COMPUTER_USE_ENABLED: "true"
+      SCREENSHOT_ENABLED: "true"
+
+external_apis:
+  supabase:
+    rest_api:
+      url: "https://cxzllzyxwpyptfretryc.supabase.co/rest/v1"
+      auth_method: "api_key"
+      rate_limit: "100 req/min"
+      
+    realtime:
+      url: "wss://cxzllzyxwpyptfretryc.supabase.co/realtime/v1"
+      auth_method: "websocket_api_key"
+      concurrent_limit: 10
+      
+  pulser:
+    api_url: "https://api.pulser.dev/v1"
+    auth_method: "jwt_bearer"
+    rate_limit: "1000 req/min"
+    
+  vercel:
+    api_url: "https://api.vercel.com/v1"
+    auth_method: "personal_access_token"
+    rate_limit: "500 req/min"
+
+database_dependencies:
+  postgresql:
+    version: "15.x"
+    provider: "supabase_cloud"
+    connection_method: "pooled"
+    
+  extensions:
+    pg_stat_statements: "enabled"
+    row_level_security: "enabled"
+    realtime: "enabled"
+    
+  materialized_views:
+    - "superstore_kpi_summary"
+    - "superstore_daily_trends"
+    - "superstore_customer_analytics"
+    - "superstore_state_performance"
+
+deployment_config:
+  platform: "vercel"
+  framework: "nextjs"
+  build_command: "npm run build"
+  output_directory: ".next"
+  node_version: "18.x"
+  
+  environment_variables:
+    production:
+      NEXT_PUBLIC_SUPABASE_URL: "@supabase-url"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "@supabase-anon-key"
+      SUPABASE_SERVICE_ROLE_KEY: "@supabase-service-key"
+      PULSER_API_KEY: "@pulser-api-key"
+      
+    development:
+      NEXT_PUBLIC_SUPABASE_URL: "https://cxzllzyxwpyptfretryc.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      SUPABASE_SERVICE_ROLE_KEY: "sbp_841cbb5589cbd90791cc3067d7161ec2c6d64c64"
+
+security_requirements:
+  version_locking:
+    enabled: true
+    method: "package-lock.json"
+    
+  vulnerability_scanning:
+    frequency: "weekly"
+    tools: ["github_dependabot", "npm_audit"]
+    
+  secret_management:
+    method: "environment_variables"
+    hardcoded_secrets: "forbidden"
+    
+  access_control:
+    database: "supabase_rls"
+    api: "jwt_bearer"
+    
+  audit_logging:
+    enabled: true
+    agent_actions: "pulser_audit_trail"
+    database_queries: "pg_stat_statements"
+
+performance_optimizations:
+  code_splitting:
+    enabled: true
+    method: "nextjs_dynamic_imports"
+    
+  image_optimization:
+    enabled: true
+    method: "nextjs_image_component"
+    
+  api_caching:
+    enabled: true
+    method: "custom_cache_layer"
+    ttl: "5 minutes"
+    
+  database_indexing:
+    enabled: true
+    critical_indexes:
+      - "idx_orders_date"
+      - "idx_orders_customer"
+      - "idx_orders_product"
+      - "idx_orders_revenue"
+
+ci_cd_pipeline:
+  platform: "github_actions"
+  node_version: "18.x"
+  
+  steps:
+    - name: "checkout"
+      action: "actions/checkout@v4"
+      
+    - name: "setup_node"
+      action: "actions/setup-node@v4"
+      with:
+        node_version: "18"
+        
+    - name: "install_dependencies"
+      command: "npm ci"
+      
+    - name: "run_tests"
+      command: "npm test"
+      
+    - name: "build_project"
+      command: "npm run build"
+      
+    - name: "deploy_to_vercel"
+      action: "amondnet/vercel-action@v25"
+      with:
+        vercel_token: "${{ secrets.VERCEL_TOKEN }}"
+        vercel_args: "--prod"
+
+risk_mitigation:
+  breaking_changes:
+    strategy: "pin_exact_versions"
+    testing: "automated_pipeline"
+    
+  security_vulnerabilities:
+    strategy: "weekly_scans"
+    monitoring: "github_security_advisories"
+    
+  service_downtime:
+    strategy: "fallback_mechanisms"
+    monitoring: "health_checks"
+    
+  rate_limiting:
+    strategy: "exponential_backoff"
+    monitoring: "api_usage_tracking"
+    
+  agent_failures:
+    strategy: "graceful_degradation"
+    monitoring: "agent_health_checks"
+
+upgrade_strategy:
+  react_nextjs:
+    frequency: "monthly"
+    testing: "full_regression_suite"
+    rollback: "git_revert"
+    
+  supabase_sdk:
+    frequency: "bi_weekly"
+    testing: "api_integration_tests"
+    rollback: "version_pin_rollback"
+    
+  mcp_agents:
+    frequency: "weekly"
+    testing: "agent_behavioral_tests"
+    rollback: "agent_version_rollback"
+    
+  database_schema:
+    frequency: "as_needed"
+    testing: "migration_testing"
+    rollback: "schema_rollback_script"
+
+monitoring:
+  performance_metrics:
+    - "load_time"
+    - "api_response_time"
+    - "chart_render_time"
+    - "memory_usage"
+    
+  business_metrics:
+    - "dashboard_usage"
+    - "filter_interactions"
+    - "agent_execution_time"
+    - "error_rates"
+    
+  alerts:
+    - threshold: "load_time > 3s"
+      action: "slack_notification"
+    - threshold: "api_errors > 5%"
+      action: "email_alert"
+    - threshold: "agent_failure_rate > 1%"
+      action: "page_oncall"
+
+compliance:
+  data_privacy:
+    - "gdpr_compliant"
+    - "data_anonymization"
+    - "user_consent_management"
+    
+  security_standards:
+    - "owasp_top_10"
+    - "secure_coding_practices"
+    - "dependency_vulnerability_scanning"
+    
+  audit_requirements:
+    - "change_tracking"
+    - "access_logging"
+    - "data_lineage"

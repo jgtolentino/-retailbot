@@ -1,0 +1,41 @@
+meta {
+  name: Product Mix API Tests
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{supabase_url}}/rest/v1/product_mix
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{anon_key}}
+  Content-Type: application/json
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return product mix data", function() {
+    expect(res.getBody()).to.be.an('array');
+    expect(res.getBody().length).to.be.greaterThan(0);
+  });
+  
+  test("product mix should have category and value", function() {
+    const product = res.getBody()[0];
+    expect(product).to.have.property('category');
+    expect(product).to.have.property('value');
+    expect(product).to.have.property('revenue');
+  });
+  
+  test("should have valid categories", function() {
+    const validCategories = ['Beverages', 'Snacks', 'Personal Care', 'Tobacco', 'Household'];
+    const product = res.getBody()[0];
+    expect(validCategories).to.include(product.category);
+  });
+}

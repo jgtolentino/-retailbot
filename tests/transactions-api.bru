@@ -1,0 +1,39 @@
+meta {
+  name: Scout Databank API Regression Tests
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{supabase_url}}/rest/v1/transactions
+  body: none
+  auth: none
+}
+
+headers {
+  apikey: {{anon_key}}
+  Authorization: Bearer {{anon_key}}
+  Content-Type: application/json
+}
+
+tests {
+  test("should return 200 status", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("should return array of transactions", function() {
+    expect(res.getBody()).to.be.an('array');
+  });
+  
+  test("transaction should have required fields", function() {
+    const transaction = res.getBody()[0];
+    expect(transaction).to.have.property('id');
+    expect(transaction).to.have.property('revenue');
+    expect(transaction).to.have.property('created_at');
+  });
+  
+  test("revenue should be numeric", function() {
+    const transaction = res.getBody()[0];
+    expect(typeof transaction.revenue).to.equal('number');
+  });
+}

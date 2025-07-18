@@ -1,0 +1,241 @@
+# MCP Supabase Fix Orchestration
+# Automated schema repair and RLS configuration
+
+name: supabase-fix-orchestrator
+version: 1.0.0
+description: Automated Supabase schema, RLS, and realtime configuration
+
+tasks:
+  - id: verify-connection
+    type: supabase.query
+    config:
+      query: "SELECT current_database(), current_user, version();"
+      description: "Verify Supabase connection and permissions"
+    
+  - id: create-tables
+    type: supabase.execute
+    config:
+      script: |
+        -- Create all required tables
+        CREATE TABLE IF NOT EXISTS transactions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          volume DECIMAL(10,2),
+          revenue DECIMAL(10,2),
+          avg_basket DECIMAL(10,2),
+          duration INTEGER,
+          units INTEGER,
+          location VARCHAR(255),
+          category VARCHAR(255),
+          brand VARCHAR(255)
+        );
+
+        CREATE TABLE IF NOT EXISTS product_mix (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          category VARCHAR(255),
+          value DECIMAL(10,2),
+          skus INTEGER,
+          revenue DECIMAL(10,2)
+        );
+
+        CREATE TABLE IF NOT EXISTS consumer_behavior (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          method VARCHAR(255),
+          value DECIMAL(10,2),
+          suggested INTEGER,
+          accepted INTEGER,
+          rate DECIMAL(5,2)
+        );
+
+        CREATE TABLE IF NOT EXISTS consumer_profiles (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          age_group VARCHAR(50),
+          gender VARCHAR(20),
+          location VARCHAR(255),
+          income_level VARCHAR(50),
+          urban_rural VARCHAR(20)
+        );
+
+        CREATE TABLE IF NOT EXISTS product_substitutions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          original_product VARCHAR(255),
+          suggested_product VARCHAR(255),
+          acceptance_rate DECIMAL(5,2),
+          revenue_impact DECIMAL(10,2)
+        );
+
+        CREATE TABLE IF NOT EXISTS suggestion_acceptance (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          suggestion_type VARCHAR(100),
+          accepted BOOLEAN,
+          user_segment VARCHAR(100),
+          product_category VARCHAR(100)
+        );
+
+        CREATE TABLE IF NOT EXISTS sku_analytics (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          created_at TIMESTAMPTZ DEFAULT now(),
+          sku VARCHAR(100),
+          product_name VARCHAR(255),
+          category VARCHAR(100),
+          units_sold INTEGER,
+          revenue DECIMAL(10,2),
+          stock_level INTEGER
+        );
+      description: "Create all Scout Databank tables"
+      rollback: |
+        -- Rollback script if needed
+        DROP TABLE IF EXISTS sku_analytics CASCADE;
+        DROP TABLE IF EXISTS suggestion_acceptance CASCADE;
+        DROP TABLE IF EXISTS product_substitutions CASCADE;
+        DROP TABLE IF EXISTS consumer_profiles CASCADE;
+        DROP TABLE IF EXISTS consumer_behavior CASCADE;
+        DROP TABLE IF EXISTS product_mix CASCADE;
+        DROP TABLE IF EXISTS transactions CASCADE;
+
+  - id: enable-rls
+    type: supabase.batch
+    config:
+      commands:
+        - "ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE product_mix ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE consumer_behavior ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE consumer_profiles ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE product_substitutions ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE suggestion_acceptance ENABLE ROW LEVEL SECURITY;"
+        - "ALTER TABLE sku_analytics ENABLE ROW LEVEL SECURITY;"
+      description: "Enable RLS on all tables"
+
+  - id: create-policies
+    type: supabase.execute
+    config:
+      script: |
+        -- Create RLS policies for anon access
+        DO $$
+        DECLARE
+          tbl text;
+        BEGIN
+          FOREACH tbl IN ARRAY ARRAY[
+            'transactions',
+            'product_mix',
+            'consumer_behavior',
+            'consumer_profiles',
+            'product_substitutions',
+            'suggestion_acceptance',
+            'sku_analytics'
+          ] LOOP
+            -- Drop existing policy if exists
+            EXECUTE format('DROP POLICY IF EXISTS "Allow anon read access" ON %I', tbl);
+            
+            -- Create new policy
+            EXECUTE format($f$
+              CREATE POLICY "Allow anon read access" ON %I
+              FOR SELECT TO anon USING (true)
+            $f$, tbl);
+          END LOOP;
+        END$$;
+      description: "Create anon read policies for all tables"
+
+  - id: enable-realtime
+    type: supabase.execute
+    config:
+      script: |
+        -- Ensure realtime publication exists
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+          ) THEN
+            CREATE PUBLICATION supabase_realtime;
+          END IF;
+        END$$;
+
+        -- Add tables to realtime
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS transactions;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS product_mix;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS consumer_behavior;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS consumer_profiles;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS product_substitutions;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS suggestion_acceptance;
+        ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS sku_analytics;
+      description: "Enable realtime on all tables"
+
+  - id: insert-sample-data
+    type: supabase.execute
+    config:
+      script: |
+        -- Insert sample data only if tables are empty
+        INSERT INTO transactions (volume, revenue, avg_basket, duration, units, location, category, brand)
+        SELECT 
+          (random() * 10000 + 1000)::DECIMAL(10,2),
+          (random() * 50000 + 5000)::DECIMAL(10,2),
+          (random() * 200 + 50)::DECIMAL(10,2),
+          (random() * 120 + 30)::INTEGER,
+          (random() * 500 + 50)::INTEGER,
+          (ARRAY['New York', 'Los Angeles', 'Chicago', 'Houston'])[floor(random() * 4 + 1)],
+          (ARRAY['Electronics', 'Clothing', 'Food & Beverage', 'Home & Garden', 'Sports & Outdoors'])[floor(random() * 5 + 1)],
+          (ARRAY['Brand A', 'Brand B', 'Brand C'])[floor(random() * 3 + 1)]
+        FROM generate_series(1, 5)
+        WHERE NOT EXISTS (SELECT 1 FROM transactions LIMIT 1);
+
+        -- Similar inserts for other tables...
+      description: "Insert sample data if tables are empty"
+      condition: "SELECT COUNT(*) = 0 FROM transactions"
+
+  - id: verify-setup
+    type: supabase.query
+    config:
+      query: |
+        SELECT 
+          t.table_name,
+          t.row_security as rls_enabled,
+          COUNT(p.policyname) as policy_count,
+          EXISTS(
+            SELECT 1 FROM pg_publication_tables 
+            WHERE pubname = 'supabase_realtime' 
+            AND schemaname = 'public' 
+            AND tablename = t.table_name
+          ) as realtime_enabled
+        FROM pg_tables t
+        LEFT JOIN pg_policies p ON t.tablename = p.tablename AND t.schemaname = p.schemaname
+        WHERE t.schemaname = 'public' 
+        AND t.tablename IN (
+          'transactions', 'product_mix', 'consumer_behavior', 
+          'consumer_profiles', 'product_substitutions', 
+          'suggestion_acceptance', 'sku_analytics'
+        )
+        GROUP BY t.table_name, t.row_security;
+      description: "Verify all tables are properly configured"
+      expected:
+        all_tables_have_rls: true
+        all_tables_have_policies: true
+        all_tables_have_realtime: true
+
+logging:
+  level: info
+  destination: mcp_logs.supabase_patches
+  include_timestamps: true
+  include_task_id: true
+
+error_handling:
+  strategy: rollback_on_failure
+  max_retries: 3
+  retry_delay: 5s
+  notification:
+    type: webhook
+    url: "${MCP_WEBHOOK_URL}"
+
+audit:
+  enabled: true
+  table: mcp_audit_log
+  fields:
+    - task_id
+    - status
+    - duration
+    - error_message
+    - user_agent

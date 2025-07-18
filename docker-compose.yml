@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  # Supabase Database
+  db:
+    image: postgres:15
+    container_name: scout_postgres
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - scout_network
+
+  # Supabase API
+  api:
+    image: supabase/gotrue:latest
+    container_name: scout_api
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:postgres@db:5432/postgres?sslmode=disable
+      GOTRUE_SITE_URL: http://localhost:3000
+      GOTRUE_URI_ALLOW_LIST: http://localhost:3000
+      GOTRUE_DISABLE_SIGNUP: false
+      GOTRUE_JWT_SECRET: your-jwt-secret-here
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+    depends_on:
+      - db
+    ports:
+      - "9999:9999"
+    networks:
+      - scout_network
+
+  # PostgREST API
+  rest:
+    image: postgrest/postgrest:latest
+    container_name: scout_rest
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: your-jwt-secret-here
+      PGRST_DB_USE_LEGACY_GUCS: false
+    depends_on:
+      - db
+    ports:
+      - "3001:3000"
+    networks:
+      - scout_network
+
+  # Realtime Server
+  realtime:
+    image: supabase/realtime:latest
+    container_name: scout_realtime
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_SSL: false
+      PORT: 4000
+      JWT_SECRET: your-jwt-secret-here
+      REPLICATION_MODE: RLS
+      REPLICATION_POLL_INTERVAL: 100
+      SECURE_CHANNELS: true
+      SLOT_NAME: supabase_realtime_rls
+      TEMPORARY_SLOT: true
+    depends_on:
+      - db
+    ports:
+      - "4000:4000"
+    networks:
+      - scout_network
+
+  # Supabase Studio (Dashboard)
+  studio:
+    image: supabase/studio:latest
+    container_name: scout_studio
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: postgres
+      DEFAULT_ORGANIZATION_NAME: Scout Analytics
+      DEFAULT_PROJECT_NAME: Scout Databank
+      SUPABASE_URL: http://rest:3000
+      SUPABASE_REST_URL: http://rest:3000/rest/v1/
+      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeJsEOEAZqZuwZP2uKqMwwKhWCuXpqaYSPQ
+      SUPABASE_SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+    depends_on:
+      - meta
+    ports:
+      - "3002:3000"
+    networks:
+      - scout_network
+
+  # PostgREST Meta
+  meta:
+    image: supabase/postgres-meta:latest
+    container_name: scout_meta
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: postgres
+      PG_META_DB_PASSWORD: postgres
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+    networks:
+      - scout_network
+
+  # Storage
+  storage:
+    image: supabase/storage-api:latest
+    container_name: scout_storage
+    environment:
+      ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeJsEOEAZqZuwZP2uKqMwwKhWCuXpqaYSPQ
+      SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: your-jwt-secret-here
+      DATABASE_URL: postgres://postgres:postgres@db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: true
+      IMGPROXY_URL: http://imgproxy:5001
+    depends_on:
+      - db
+      - rest
+    ports:
+      - "5000:5000"
+    volumes:
+      - storage_data:/var/lib/storage
+    networks:
+      - scout_network
+
+  # Image Proxy
+  imgproxy:
+    image: darthsim/imgproxy:latest
+    container_name: scout_imgproxy
+    environment:
+      IMGPROXY_BIND: 0.0.0.0:5001
+      IMGPROXY_LOCAL_FILESYSTEM_ROOT: /var/lib/storage
+      IMGPROXY_USE_ETAG: true
+      IMGPROXY_ENABLE_WEBP_DETECTION: true
+    volumes:
+      - storage_data:/var/lib/storage
+    ports:
+      - "5001:5001"
+    networks:
+      - scout_network
+
+volumes:
+  postgres_data:
+  storage_data:
+
+networks:
+  scout_network:
+    driver: bridge

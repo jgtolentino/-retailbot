@@ -1,0 +1,126 @@
+# RetailBot Agent Configuration - Scout Retail Dashboard
+# Handles KPI calculations, delta analysis, and retail metric intelligence
+
+agent_config:
+  name: "RetailBot"
+  version: "4.5.1"
+  purpose: "Retail analytics and KPI computation for Scout Dashboard"
+  
+  # MCP Server Integration
+  mcp_servers:
+    - name: "supabase-mcp"
+      tables: ["transactions", "customers", "products", "regions", "states"]
+      views: ["scout_metrics_summary", "daily_revenue_trends"]
+      
+  # Core Capabilities
+  capabilities:
+    - kpi_calculation
+    - delta_analysis  
+    - trend_detection
+    - retail_intelligence
+    - benchmark_comparison
+    
+  # Task Definitions
+  tasks:
+    calculate_kpis:
+      description: "Compute primary retail KPIs with period comparisons"
+      inputs:
+        - date_range: "YYYY-MM-DD to YYYY-MM-DD"
+        - filters: "{region?, segment?, category?}"
+      outputs:
+        - transactions_count: number
+        - total_revenue: number
+        - profit: number  
+        - items_sold: number
+        - yoy_deltas: object
+        - mom_deltas: object
+      sql_template: |
+        WITH current_period AS (
+          SELECT 
+            COUNT(*) as transactions,
+            SUM(revenue) as total_revenue,
+            SUM(profit) as profit,
+            SUM(quantity) as items_sold
+          FROM transactions t
+          JOIN customers c ON t.customer_id = c.id
+          JOIN products p ON t.product_id = p.id
+          WHERE t.order_date BETWEEN $1 AND $2
+            AND ($3 IS NULL OR t.region = $3)
+            AND ($4 IS NULL OR t.segment = $4)
+            AND ($5 IS NULL OR p.category = $5)
+        ),
+        previous_year AS (
+          SELECT 
+            COUNT(*) as transactions,
+            SUM(revenue) as total_revenue,
+            SUM(profit) as profit,
+            SUM(quantity) as items_sold
+          FROM transactions t
+          JOIN customers c ON t.customer_id = c.id
+          JOIN products p ON t.product_id = p.id
+          WHERE t.order_date BETWEEN $1::date - INTERVAL '1 year' AND $2::date - INTERVAL '1 year'
+            AND ($3 IS NULL OR t.region = $3)
+            AND ($4 IS NULL OR t.segment = $4)
+            AND ($5 IS NULL OR p.category = $5)
+        )
+        SELECT 
+          cp.*,
+          ROUND((cp.transactions - py.transactions) * 100.0 / py.transactions, 2) as transactions_yoy,
+          ROUND((cp.total_revenue - py.total_revenue) * 100.0 / py.total_revenue, 2) as revenue_yoy,
+          ROUND((cp.profit - py.profit) * 100.0 / py.profit, 2) as profit_yoy,
+          ROUND((cp.items_sold - py.items_sold) * 100.0 / py.items_sold, 2) as items_yoy
+        FROM current_period cp, previous_year py;
+        
+    analyze_trends:
+      description: "Detect and analyze retail trends for narrative generation"
+      inputs:
+        - metric: "revenue|profit|transactions|items"
+        - period: "daily|weekly|monthly"
+        - filters: object
+      outputs:
+        - trend_direction: "up|down|stable"
+        - trend_strength: "strong|moderate|weak"
+        - key_insights: array
+        - narrative_text: string
+      logic: |
+        1. Calculate period-over-period changes
+        2. Identify significant inflection points
+        3. Correlate with external factors (seasonality, promotions)
+        4. Generate human-readable insights
+        
+    benchmark_performance:
+      description: "Compare performance against industry benchmarks"
+      inputs:
+        - metrics: object
+        - industry_segment: string
+        - time_period: string
+      outputs:
+        - performance_score: number
+        - benchmark_comparison: object
+        - recommendations: array
+        
+  # Integration with Other Agents
+  agent_collaboration:
+    with_claudia:
+      - shares: ["kpi_results", "trend_analysis"] 
+      - receives: ["filter_changes", "drill_down_requests"]
+      
+    with_learnbot:
+      - shares: ["insights", "anomalies"]
+      - receives: ["narrative_feedback"]
+      
+    with_dash:
+      - shares: ["computed_metrics", "chart_data"]
+      - receives: ["ui_interaction_events"]
+      
+  # Performance Optimization
+  caching:
+    kpi_cache_ttl: 300 # 5 minutes
+    trend_cache_ttl: 600 # 10 minutes
+    benchmark_cache_ttl: 3600 # 1 hour
+    
+  # Error Handling
+  error_handling:
+    sql_errors: "log_and_return_cached"
+    data_quality_issues: "flag_and_estimate"
+    performance_degradation: "switch_to_summary_tables"
